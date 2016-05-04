@@ -1,0 +1,285 @@
+<!DocType HTML>
+<html>
+<head>
+	<script> 
+	    // ID, Sexo, idPai, idMae, idContemporaneos, peso
+	    var populacao=[];
+		var geracoes=[];
+		var ultTecla = -1;
+		var maxTraits = 7;
+		var maleRate = 30;
+        var nTraits = 0;
+					
+		/* ==============================================
+		Função para geração de valor aleatorio seguindo
+		uma normal gaussiana
+		================================================*/
+		function normal(media, desvio){
+			var x=Math.random();
+			var y=Math.random();
+			return ((Math.sqrt(-2*Math.log(x))*Math.cos(2*Math.PI*y))*desvio)+media;
+		}
+
+		/* ==============================================
+		Função para ordenação de uma matriz pelo indice 
+		selecionado, no sentido especificado 
+		(asc para ascendente ou dsc para descendente 
+		=================================================*/
+		function ordena_matriz(matriz, indice, sentido){
+			var aux;
+			var i;
+			for (i=0; i<matriz.length; i++){
+				for (var j=0; j<matriz.length; j ++){
+					if (((sentido == 'asc')&&(matriz[i][indice] < matriz[j][indice]))||
+					    ((sentido == 'dsc')&&(matriz[i][indice] > matriz[j][indice]))){
+						aux = matriz[i];
+						matriz[i] = matriz[j];
+						matriz[j] = aux;
+					}
+				}
+			}
+			return matriz;
+		}
+				
+		
+		
+		function machos(lista){
+			
+			return filtra_sexo(lista,'M',0,0,1);
+		}
+
+		function femeas(lista){
+			return filtra_sexo(lista,'F',0,0,1);
+		}
+		
+		function filtra_sexo(lista, stSexo){
+			var arrSaida = [];
+			ct = 0;
+			for (var i=0; i<lista.length; i++){
+				if (lista[i][1] == stSexo){
+					arrSaida.push(lista[i]);
+				}
+			}
+			return arrSaida;
+		}
+		
+		function filtra_sexo_tam(lista, stSexo, nTamanho){
+			var arrSaida = [];
+			var ct= 0;
+			for (var i=0; i<lista.length; i++){
+				if (lista[i][1] == stSexo){
+					arrSaida.push(lista[i]);
+					ct++;
+				}
+				if (ct >= nTamanho) break;
+			}
+			return arrSaida;
+		}
+		
+		function filtra_sexo_random(lista, stSexo, nTamanho){
+			var preselecionados = filtra_sexo(lista,stSexo);
+			var ct = 0;
+			var tentativas = 0;
+			var position = 0;
+			var lista_saida = [];
+			while ((tentativas < preselecionados.length)&&(ct < nTamanho)){
+				position = Math.floor(Math.random() * (preselecionados.length));
+				lista_saida.push(lista[position]);
+				ct++
+				tentativas++;
+			}
+			return lista_saida;
+		}
+
+		function sorteia_sexo(){
+		    // setting sex
+			if (Math.random() > (parseFloat(editMaleRate.value)/100)){
+				return 2;
+			}else{ 
+				return 1; 
+			}
+		}
+		
+		function inicia_rebanho(){
+			// check provided values
+			// create ancestors list
+			populacao = [];
+			var nElements = parseInt(iniSize.value);
+			nTraits = traits_count();
+			for (var i=0; i<nElements; i++){
+				var elem=[];
+				// setting id
+				elem[0] = i+1;
+				elem[1] = sorteia_sexo();	
+				// parent fields
+				elem[2] =0;
+				elem[3] =0;
+				// contemporaneos
+				elem[4] =0;
+				// add traits
+				for (var j=1; j<=nTraits; j++){
+				   if ((parseInt(document.getElementById('sxCarac'+j).value)==0)||(parseInt(document.getElementById('sxCarac'+j).value)==elem[1])) {
+				      elem[j+4] = normal(parseFloat(document.getElementById('mdCarac'+j.toString()).value), parseFloat( document.getElementById('dvCarac'+j.toString()).value));
+					  elem[j+4].toFixed(4);
+				   } else elem[j+4] = 0;
+				}
+				
+				populacao.push(elem);
+			}
+		}
+		
+		function nova_geracao(divContainer){
+			nTraits = traits_count();
+			var nMale = parseInt(nMachos.value);
+			var nFemale = parseInt(nFemeas.value);
+			var usedFemales;
+			var nCicles = parseInt(nCiclos.value);
+			var avgOffspring = parseInt(nFilhos.value);
+			var stHtml="";
+			for (var i=0; i<nCicles; i++){
+				var Female = filtra_sexo_random(populacao,2,nFemale);
+				var Male = filtra_sexo_random(populacao,1,nMale);
+				var idMale=0;
+				for (var j=0; j<Female.length; j++){
+					gera_filhos( Male[idMale][0], Female[j][0], i+1);
+					if (idMale < nMale-1) 
+					   	idMale++;
+					else idMale = 0;
+				}
+				
+			}
+			
+			document.getElementById(divContainer).innerHTML = tabela_rebanho(populacao);
+		}
+		
+		function gera_filhos(idPai, idMae, idContemporaneos){
+		    var filho=[];
+			filho[0] = populacao.length + 1;
+			filho[1] = sorteia_sexo();
+			filho[2] = idPai;
+			filho[3] = idMae;
+			filho[4] = idContemporaneos;
+			for (var j=1; j<=nTraits; j++){
+			   if ((parseInt(document.getElementById('sxCarac'+j).value)==0)||(parseInt(document.getElementById('sxCarac'+j).value)==filho[1])) {
+				  filho[j+4] = normal(parseFloat(document.getElementById('mdCarac'+j.toString()).value), parseFloat( document.getElementById('dvCarac'+j.toString()).value));
+				  filho[j+4].toFixed(4);
+			   } else filho[j+4] = 0;
+			}
+			populacao.push(filho);
+		}
+		
+		function valida_entradas(){
+		}
+		
+		function traits_count(){
+			var ct=0;
+			for (var i=1; i<= maxTraits; i++)
+				if ((document.getElementById('nmCarac'+i).value != "")&&(document.getElementById('nmCarac'+i).value != undefined))
+					ct ++;
+	
+			return ct;
+		}
+		
+		function tabela_rebanho(lista){
+			stHtml = "<table>";
+			// busca numero de caracteristicas preenchidas
+			var nCarac= traits_count();
+			stHtml += "<tr><th>ID</th><th>sexo</th><th>pai</th><th>mae</th><th>gc</th>";
+			for (var j=1; j<=nCarac; j++)
+			   stHtml += "<th>"+document.getElementById('nmCarac'+j).value+"</th>";
+			stHtml += "</tr>";
+			for (var i=0; i< lista.length; i++){
+				stHtml += "<tr><td>"+lista[i][0]+"</td><td>"+lista[i][1]+"</td><td>"+lista[i][2]+"</td><td>"+lista[i][3]+"</td><td>"+lista[i][4]+"</td>";
+				for (j=1; j<=nCarac; j++)
+				   stHtml += "<td>"+lista[i][4+j].toFixed(4)+"</td>";
+				stHtml += "</tr>";
+			}
+			
+			stHtml += "</table>";
+			return stHtml;
+		}
+		
+		function exibe_rebanho(divContainer){
+			document.getElementById(divContainer).innerHTML = 'Aguarde, gerando dados ';
+		    inicia_rebanho();
+			document.getElementById(divContainer).innerHTML = tabela_rebanho(populacao);
+		}
+		
+		function testeKey(tecla){
+			ultTecla = tecla.keyCode;
+			if ((ultTecla == 9)||(ultTecla ==13)){
+				tecla.keyCode = undefined;
+				alert('ProximoElemento');
+				return false;
+			} else return true;
+		}
+		
+		
+		//document.onkeydown = testeKey;
+	</script>
+	<style>
+		input{
+			width:80px;
+		}
+		.input-large{
+			width:180px;
+		}
+		.input-small{
+			width:70px;
+		}
+	</style>
+</head>
+<body>
+   <div id="edits">
+		<label>Parametros da populacao </label>
+		<table>
+		<tr><td>Tamanho inicial do rebanho</td>
+		<td> <input type="number" id="iniSize" value="100"/>individuos</td>
+		</tr><tr>
+		<td> Percentual de individuos do sexo Masculino </td>
+		<td> <input type="number" id="editMaleRate" value="50"/>%</td>
+		</tr>
+		</table>
+		<br>
+		<label>Ciclos de acasalamento</label>
+		<table>
+		<tr>
+		<td>Numero de ciclos de acasalamento </td>
+		<td> <input type="number" id="nCiclos" name="nCiclos" value="10"> </td></tr>
+		<tr><td> Numero de machos em cada ciclo </td>
+		<td> <input type="number" id="nMachos" name="nMachos" value="5"> </td></tr>
+		<tr><td> Numero de Femeas em cada ciclo </td>
+		<td> <input type="number" id="nFemeas" name="nFemeas" value="30"> </td></tr>
+		<tr><td> Numero de Filhos por parto </td>
+		<td> <input type="number" id="nFilhos" name="nFilhos" value="1"> </td></tr>
+		</table> 
+		<br> 
+		<label>Caracteristicas</label>
+		<br> Preencha os valores das caracteristicas de interesse, Pode ser informado qualquer numero de caracteristicas, as nao informadas sao ignoradas. 
+		<br> Sexo: 1= Masculino; 2=Feminino;
+		<table>
+		<tr><th>#</th><th>Nome da Caracteristica</th><th>Media</th><th>Desvio padrao</th><th>Sexo</th><!--<th>Freq(%)<th>--></tr>
+		<tr><th> 1</th><td><input class='input-large' id="nmCarac1"></td><td><input type="number" id="mdCarac1" size="5"></td><td><input type="number" id="dvCarac1"></td><td><select id="sxCarac1"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number" id="freq1"  value="100"></td>--></tr>
+		<tr><th> 2</th><td><input class='input-large'  id="nmCarac2"></td><td><input type="number" id="mdCarac2" size="5"></td><td><input type="number" id="dvCarac2"></td><td><select id="sxCarac2"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq2" value="100"></td>--></tr>
+		<tr><th> 3</th><td><input class='input-large'  id="nmCarac3"></td><td><input type="number" id="mdCarac3" size="5"></td><td><input type="number" id="dvCarac3"></td><td><select id="sxCarac3"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq3" value="100"></td>--></tr>
+		<tr><th> 4</th><td><input class='input-large'  id="nmCarac4"></td><td><input type="number" id="mdCarac4" size="5"></td><td><input type="number" id="dvCarac4"></td><td><select id="sxCarac4"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq4" value="100"></td>--></tr>
+		<tr><th> 5</th><td><input class='input-large'  id="nmCarac5"></td><td><input type="number" id="mdCarac5" size="5"></td><td><input type="number" id="dvCarac5"></td><td><select id="sxCarac5"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq5" value="100"></td>--></tr>
+		<tr><th> 6</th><td><input class='input-large'  id="nmCarac6"></td><td><input type="number" id="mdCarac6" size="5"></td><td><input type="number" id="dvCarac6"></td><td><select id="sxCarac6"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq6" value="100"></td>--></tr>
+		<tr><th> 7</th><td><input class='input-large'  id="nmCarac7"></td><td><input type="number" id="mdCarac7" size="5"></td><td><input type="number" id="dvCarac7"></td><td><select id="sxCarac7"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq7" value="100"></td>--></tr>
+		<tr><th> 8</th><td><input class='input-large'  id="nmCarac8"></td><td><input type="number" id="mdCarac8" size="5"></td><td><input type="number" id="dvCarac8"></td><td><select id="sxCarac8"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq8" value="100"></td>--></tr>
+		<tr><th> 9</th><td><input class='input-large'  id="nmCarac9"></td><td><input type="number" id="mdCarac9" size="5"></td><td><input type="number" id="dvCarac9"></td><td><select id="sxCarac9"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq9" value="100"></td>--></tr>
+		<tr><th>10</th><td><input class='input-large'  id="nmCarac10"></td><td><input type="number" id="mdCarac10" size="5"></td><td><input type="number" id="dvCarac10"></td><td><select id="sxCarac10"><option value="0">Ambos</option><option value="1">Masculino</option><option value="2">Feminino</option></select></td><!--<td><input class="input-small" type="number"  id="freq10" value="100"></td>--></tr>
+		</table>
+		
+   </div>
+   <button type="button" id="btnTesta" onclick="exibe_rebanho('divRebanho')">Gerar Rebanho Inicial</button> 
+   <br>
+   <div id="divRebanho">
+   
+   
+   </div>
+   <button type="button" id="btnTesta" onclick="nova_geracao('divRebanho')">Gerar acasalamentos </button>
+</body>
+</html>
+
+
