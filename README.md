@@ -6,3 +6,7 @@ Para gerar o arquivo, deve-se preencher o nome e os valores (media e desvio padr
 
 os valores dos filhos são definidos pela media dos valores dos pais acrescidos de uma variavel mendeliana que segue 
 uma distribuicao normal, de media 0(zero) e desvio padrao com valor de metade da variancia da caracteristica
+
+clique <a href='http://www.tarcisojunior.com.br/mestrado/js/gerador-rebanho.html'> aqui </a> para ver o código em funcionamento.
+
+
